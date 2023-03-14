@@ -24,9 +24,11 @@ Future<void> main() async {
   await lucas.gk();
   await hackgods.gk();
 
-  //serialize publickey and send it to hackgods //lucas pass hackgods' publickey to func ss to generate secret key
+  //serialize publickey and send it to hackgods
+  //lucas pass hackgods' publickey to func ss to generate secret key
   await lucas.ss(await hackgods.aliceKeyPair.extractPublicKey());
-  //serialize publickey and send it to lucas   //hackgods pass lucas' publickey to func ss to generate secret key
+  //serialize publickey and send it to lucas
+  //hackgods pass lucas' publickey to func ss to generate secret key
   await hackgods.ss(await lucas.aliceKeyPair.extractPublicKey());
   //up to this point, lucas and hackgods have the same secret key
 

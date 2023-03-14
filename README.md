@@ -8,18 +8,23 @@ A new Flutter project.
 //on each side, have one encrypt utils
 EncryptUtil lucas=EncryptUtil();
 EncryptUtil hackgods=EncryptUtil();
+//call gk to generate keypair
+//if old keys cannot be trusted, should call this again and generate new secret key
 await lucas.gk();
 await hackgods.gk();
 
-//serialize publickey and send it to hackgods //lucas pass hackgods' key to func ss to generate secret key
+//serialize publickey and send it to hackgods 
+//lucas pass hackgods' publickey to func ss to generate secret key
 await lucas.ss(await hackgods.aliceKeyPair.extractPublicKey());
-//serialize publickey and send it to lucas   //hackgods pass lucas' key to func ss to generate secret key
+//serialize publickey and send it to lucas
+//hackgods pass lucas' publickey to func ss to generate secret key
 await hackgods.ss(await lucas.aliceKeyPair.extractPublicKey());
 //up to this point, lucas and hackgods have the same secret key
 
 String test='some plain text message';
 
-//lucas encrypt test message //lucas serialize SecretBox and send it to hackgods
+//lucas encrypt test message 
+//lucas serialize SecretBox and send it to hackgods
 SecretBox box1=await lucas.enc(test);
 print("encrypt test: ${box1.cipherText}");
 
