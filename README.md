@@ -2,51 +2,28 @@
 
 A new Flutter project.
 
-## RsaUtils
+
+## secret key generation and aes encryption
 ```dart
-import 'package:bluechat/functions/rsautils.dart';
+//on each side, have one encrypt utils
+EncryptUtil lucas=EncryptUtil();
+EncryptUtil hackgods=EncryptUtil();
+await lucas.gk();
+await hackgods.gk();
 
+//serialize publickey and send it to hackgods //lucas pass hackgods' key to func ss to generate secret key
+await lucas.ss(await hackgods.aliceKeyPair.extractPublicKey());
+//serialize publickey and send it to lucas   //hackgods pass lucas' key to func ss to generate secret key
+await hackgods.ss(await lucas.aliceKeyPair.extractPublicKey());
+//up to this point, lucas and hackgods have the same secret key
 
+String test='some plain text message';
 
-RsaUtils rsautils=new RsaUtils();
-
-// Generate Keypair
-await rsautils.genKey();
-print(rsautils.pk);
-print(rsautils.sk);
-
-// Encryption
-String a=await rsautils.encryptMsg("fuck you in the ass");
-print("encrypted message: $a");
-
-// Decryption
-String b=await rsautils.decryptMsg(a);
-print("decrypted message: $b");
-```
-
-
-## secret key generate and aes
-```dart
-
-// initlize encryptutils and generate keypair
-EncryptUtil eu1=EncryptUtil();
-EncryptUtil eu2=EncryptUtil();
-await eu1.gk();
-await eu2.gk();
-
-//exchange publickey, publickey is safe to send through air, then use other's key to generate aes key
-await eu1.ss(await eu2.aliceKeyPair.extractPublicKey());
-await eu2.ss(await eu1.aliceKeyPair.extractPublicKey());
-
-String test='fuck you dip shit';
-
-print("shared secret the same?  \n ss1 ${await eu1.sk.extractBytes()} \n ss2 ${await eu2.sk.extractBytes()}");
-
-//encryption convert string to list of int
-SecretBox box1=await eu1.enc(test.codeUnits,eu1.sk);
+//lucas encrypt test message //lucas serialize SecretBox and send it to hackgods
+SecretBox box1=await lucas.enc(test);
 print("encrypt test: ${box1.cipherText}");
 
-//decryption convert list of int to chars
-List<int> Plaintext=await eu2.dec(box1, eu2.sk);
-print("decrypt test: ${new String.fromCharCodes(Plaintext)}");
+//hackgods recieve the Secretbox and unserialize it then decrypt the message
+String Plaintext=await hackgods.dec(box1);
+print("decrypt test: $Plaintext");
 ```

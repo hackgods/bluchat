@@ -17,24 +17,28 @@ Future<void> main() async {
   print("checking user presence");
   User? uname;
 
-  //genkeys();
-  EncryptUtil eu1=EncryptUtil();
-  EncryptUtil eu2=EncryptUtil();
-  await eu1.gk();
-  await eu2.gk();
+  //on each side, have one encrypt utils
+  EncryptUtil lucas=EncryptUtil();
+  EncryptUtil hackgods=EncryptUtil();
+  //call gk to generate keypair, if old keys cannot be trusted, call this again and generate new secret key
+  await lucas.gk();
+  await hackgods.gk();
 
-  //exchange publickey, publickey is safe to send through air
-  await eu1.ss(await eu2.aliceKeyPair.extractPublicKey());
-  await eu2.ss(await eu1.aliceKeyPair.extractPublicKey());
+  //serialize publickey and send it to hackgods //lucas pass hackgods' publickey to func ss to generate secret key
+  await lucas.ss(await hackgods.aliceKeyPair.extractPublicKey());
+  //serialize publickey and send it to lucas   //hackgods pass lucas' publickey to func ss to generate secret key
+  await hackgods.ss(await lucas.aliceKeyPair.extractPublicKey());
+  //up to this point, lucas and hackgods have the same secret key
 
-  String test='fuck you dip shit';
+  String test='some plain text message';
 
-  print("shared secret the same?  \n ss1 ${await eu1.sk.extractBytes()} \n ss2 ${await eu2.sk.extractBytes()}");
-
-  SecretBox box1=await eu1.enc(test.codeUnits,eu1.sk);
+  //lucas encrypt test message //lucas serialize SecretBox and send it to hackgods
+  SecretBox box1=await lucas.enc(test);
   print("encrypt test: ${box1.cipherText}");
-  List<int> Plaintext=await eu2.dec(box1, eu2.sk);
-  print("decrypt test: ${new String.fromCharCodes(Plaintext)}");
+
+  //hackgods recieve the Secretbox and unserialize it then decrypt the message
+  String Plaintext=await hackgods.dec(box1);
+  print("decrypt test: $Plaintext");
 
 
 

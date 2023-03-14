@@ -26,15 +26,15 @@ class EncryptUtil {
   }
 
 
-  Future<SecretBox> enc(List<int> message, SecretKey secretKey) async {
+  Future<SecretBox> enc(String message) async {
 
     AesCtr algorithm = AesCtr.with256bits(
       macAlgorithm: Hmac.sha256(),
     );
     final nonce = algorithm.newNonce();
     final secretBox = await algorithm.encrypt(
-      message,
-      secretKey: secretKey,
+      message.codeUnits,
+      secretKey: sk,
       nonce: nonce
     );
     //print('Nonce: ${secretBox.nonce}');
@@ -50,15 +50,15 @@ class EncryptUtil {
   }
 
 
-  Future<List<int>> dec(SecretBox encrypted, SecretKey secretKey) async {
+  Future<String> dec(SecretBox encrypted) async {
     AesCtr algorithm = AesCtr.with256bits(
       macAlgorithm: Hmac.sha256(),
     );
     List<int> decrypted = await algorithm.decrypt(
       encrypted,
-      secretKey: secretKey,
+      secretKey: sk,
     );
-    return decrypted;
+    return String.fromCharCodes(decrypted);
   }
 
 
