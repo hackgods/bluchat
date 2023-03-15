@@ -1,7 +1,36 @@
-
+import 'package:json_annotation/json_annotation.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
+
+
+@JsonSerializable()
+class SecretBag{
+
+  static Map toJson(SecretBox box) => {
+    'cipherText': box.cipherText,
+    'mac': box.mac.bytes,
+    'nonce': box.nonce
+  };
+
+  static fromJson(Map json) {
+    //print("map: ${json['cipherText'].runtimeType}");
+    List c=json['cipherText'];
+    List m=json['mac'];
+    List n=json['nonce'];
+
+    //print("map:${c.toList()}");
+    return SecretBox(c.cast<int>(),mac: Mac(m.cast<int>()),nonce:n.cast<int>() );
+  }
+
+  static String Pack(SecretBox box){
+    return jsonEncode(toJson(box));
+  }
+  static SecretBox unPack(String bag){
+    Map m=JsonDecoder().convert(bag);
+    return fromJson(m);
+  }
+}
 
 
 
@@ -15,7 +44,13 @@ class EncryptUtil {
   }
 
 
-
+  pk() async{
+    return jsonEncode((await aliceKeyPair.extractPublicKey()).bytes);
+  }
+  ppk(String pkstr) async{
+    List pkl=jsonDecode(pkstr);
+    return SimplePublicKey(pkl.cast<int>(), type: KeyPairType.x25519);
+  }
 
   ss(PublicKey bobPublicKey) async {
 

@@ -32,3 +32,18 @@ print("encrypt test: ${box1.cipherText}");
 String Plaintext=await hackgods.dec(box1);
 print("decrypt test: $Plaintext");
 ```
+
+## serialize data to send
+```dart
+//hackgods call ppk to parse lucas.pk 
+await hackgods.ppk((await lucas.pk()));
+
+//pack encrypted into json string
+String packed=SecretBag.Pack(box1);
+print("String to send: ${packed.runtimeType} ${packed}");
+
+//parse json string into encrypted SecretBox 
+SecretBox box2=SecretBag.unPack(packed);
+print(box2);
+print("recv and dec: ${await hackgods.dec(box2)}");
+```
