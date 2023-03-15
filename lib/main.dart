@@ -7,7 +7,6 @@ import 'package:bluechat/screens/home.dart';
 import 'package:bluechat/models/userModel.dart';
 import 'package:provider/provider.dart';
 import 'package:bluechat/provider/mainprovider.dart';
-import 'package:bluechat/functions/rsautils.dart';
 import 'package:bluechat/functions/EncryptUtil.dart';
 import 'dart:convert';
 
