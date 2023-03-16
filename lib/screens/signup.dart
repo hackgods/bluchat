@@ -100,7 +100,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                 if (_formKey.currentState!.validate()) {
                   final deviceID = await Funcs().deviceData();
                   int randomNumber = Random().nextInt(20);
-                  final User userdata = User(username: _username,deviceID: deviceID,profilePhoto: randomNumber);
+                  final User userdata = User(username: _username,deviceID: deviceID,profilePhoto: int.parse(randomNumber.toString().padLeft(2, '0')));
                   await BluDatabase.createUser(userdata).then((value) {
                     //providerData.setUsername(userdata.username);
                     final providerData = Provider.of<MainProvider>(context, listen: false);

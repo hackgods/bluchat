@@ -13,7 +13,9 @@ import 'package:provider/provider.dart';
 import 'package:bluechat/provider/mainprovider.dart';
 import 'package:bluechat/functions/database.dart';
 import 'package:bluechat/models/userModel.dart';
-
+import 'package:bluechat/screens/messages.dart';
+import 'package:bluechat/models/messagesModel.dart';
+import 'dart:math';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -23,6 +25,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+
 
 
   @override
@@ -47,11 +50,13 @@ class _HomeState extends State<Home> {
       final User uname = (await BluDatabase.readUser(1));
       final userstringid = uname.username+"."+uname.deviceID+"."+uname.profilePhoto.toString();
 
-      Funcs().startAdvertising(userstringid);
+      Funcs().startAdvertising(userstringid,ctx);
       await Future.delayed(Duration(seconds: 10));
       Funcs().startDiscovery(userstringid,ctx);
       //print("second");
   }
+  
+  
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +71,6 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: Stack(
         children: [
-
 
           Center(
             child: Column(
@@ -132,7 +136,7 @@ class _HomeState extends State<Home> {
                                 backgroundColor: Colors.transparent,
                                 isScrollControlled: false,
                                 context: context,
-                                builder: (context) => drawer(parts[0],parts[1],int.parse(parts[2]))
+                                builder: (context) => drawer(parts[0],parts[1],int.parse(parts[2]),parts[3])
                             );
                           },
                           child: Container(
@@ -143,16 +147,22 @@ class _HomeState extends State<Home> {
                               Colors.white60,
                               Colors.white54
                             ][i % 3],
-                            child: Image.asset("assets/avatars/${int.parse(providerData.nearbydevices[i].replaceAll(RegExp(r'[^0-9]'), '').substring(providerData.nearbydevices[i].replaceAll(RegExp(r'[^0-9]'), '').length - 2))}.png"),
+                            child: Image.asset(
+                                "assets/avatars/${int.parse(providerData.nearbydevices[i].split('.')[2].split(':')[0])}.png",
+                              errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                                return Image.asset('assets/avatars/06.png');
+                              },
+                            ),
                           ),
                         ),
                     ]
                   ),
 
                   ElevatedButton(
-                      onPressed: () {
-                        print(providerData.nearbydevices.toString());
-                          //print(nearbydevices.toString());
+                      onPressed: () async {
+              //Nearby().stopAllEndpoints();
+                        //print(providerData.getMessages("hackgod", "FRUG"));
+
                       },
                     child: Text("DEBUG"),
                       ),
@@ -178,7 +188,10 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget drawer(String name, String deviceID, int photoID) {
+  Widget drawer(String name, String deviceID, int photoID,endpointID) {
+    final userstringid = name+"."+deviceID+"."+photoID.toString();
+
+    final providerData = Provider.of<MainProvider>(context, listen: false);
     return SafeArea(
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 8,vertical: 26),
@@ -201,13 +214,26 @@ class _HomeState extends State<Home> {
                   color: Colors.transparent,
                   child: ListTile(
                     title: Text(name, style: TextStyle(color: Colors.black.withOpacity(0.7), fontSize: 20,fontWeight: FontWeight.w700),),
-                    subtitle: ElevatedButton(
+                    subtitle: providerData.connectedDevices.contains(endpointID)
+                      ?
+                    ElevatedButton(
                       onPressed: () {
-                        //print(nearbydevices.toString());
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => ChatScreen(userName: name,photoID: photoID,endpointId: endpointID,)));
+                      },
+                      child: Text("Message"),
+                      )
+                    :
+                    ElevatedButton(
+                      onPressed: () {
+                        Funcs().sendConnectionRequest(endpointID,userstringid,context);
                       },
                       child: Text("Connect"),
                     ),
-                    trailing: Image.asset("assets/avatars/${photoID}.png",height: 80),
+                    trailing: Image.asset("assets/avatars/${photoID}.png",height: 80,
+                      errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                        return Image.asset('assets/avatars/06.png');
+                      }),
                   ),
                 ),
               ),
