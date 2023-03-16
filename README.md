@@ -2,15 +2,67 @@
 
 A new Flutter project.
 
-## Getting Started
 
-This project is a starting point for a Flutter application.
+## secret key generation and aes encryption
+```dart
+//on each side, have one encrypt utils
+EncryptUtil lucas=EncryptUtil();
+EncryptUtil hackgods=EncryptUtil();
+//call gk to generate keypair
+//if old keys cannot be trusted, should call this again and generate new secret key
+await lucas.gk();
+await hackgods.gk();
 
-A few resources to get you started if this is your first Flutter project:
+//serialize publickey and send it to hackgods 
+//lucas pass hackgods' publickey to func ss to generate secret key
+await lucas.ss(await hackgods.aliceKeyPair.extractPublicKey());
+//serialize publickey and send it to lucas
+//hackgods pass lucas' publickey to func ss to generate secret key
+await hackgods.ss(await lucas.aliceKeyPair.extractPublicKey());
+//up to this point, lucas and hackgods have the same secret key
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+String test='some plain text message';
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+//lucas encrypt test message 
+//lucas serialize SecretBox and send it to hackgods
+SecretBox box1=await lucas.enc(test);
+print("encrypt test: ${box1.cipherText}");
+
+//hackgods recieve the Secretbox and unserialize it then decrypt the message
+String Plaintext=await hackgods.dec(box1);
+print("decrypt test: $Plaintext");
+```
+
+## serialize data to send
+```dart
+//hackgods call ppk to parse lucas.pk 
+await hackgods.ppk((await lucas.pk()));
+
+//pack encrypted into json string
+String packed=SecretBag.Pack(box1);
+print("String to send: ${packed.runtimeType} ${packed}");
+
+//parse json string into encrypted SecretBox 
+SecretBox box2=SecretBag.unPack(packed);
+print(box2);
+print("recv and dec: ${await hackgods.dec(box2)}");
+```
+
+
+
+## main
+```dart
+EncryptUtil lucas=EncryptUtil();
+
+await lucas.gk();
+
+//hackgods call hackgods.pk() send it to lucas
+await lucas.ss(await lucas.ppk((hackgods.pk()));
+
+String test='some plain text message';
+
+String packed=SecretBag.Pack(await lucas.enc(test));
+//send packed String to hackgods
+
+// hackgods call await hackgods.dec(SecretBag.unPack(packed)) then gets the plaintext
+```
