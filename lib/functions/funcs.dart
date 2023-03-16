@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:bluechat/provider/mainprovider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
+import 'package:bluechat/models/messagesModel.dart';
+import 'package:bluechat/functions/database.dart';
+import 'package:intl/intl.dart';
 
 class Funcs {
 
@@ -52,6 +55,7 @@ class Funcs {
   final List<String> nearbydevices = [];
   final Strategy strategy = Strategy.P2P_CLUSTER;
 
+
   Future<void> startDiscovery(String deviceID, BuildContext ctx) async {
     try {
       final providerData = Provider.of<MainProvider>(ctx, listen: false);
@@ -59,16 +63,17 @@ class Funcs {
         deviceID,
         strategy,
         onEndpointFound: (id, name, serviceId) async {
-          providerData.addNearbyDevices(name);
+          providerData.addNearbyDevices("${name}.${id}");
           //print(providerData.nearbydevices.toString());
 
-          print('Endpoint found: $name');
+          print('Endpoint found: $name:${id}');
 
         },
         onEndpointLost: (name) {
           print('Endpoint lost: $name');
           // remove the disconnected device ID from nearbydevices list
-          providerData.nearbydevices.remove(name);
+          providerData.nearbydevices.removeWhere((item) => item.contains("${name}"));
+          //providerData.nearbydevices.remove("${name}.${id}");
           providerData.notifyListeners();
         },
         serviceId: "com.hg.bluechat.bluechat",
@@ -78,21 +83,49 @@ class Funcs {
     }
   }
 
-  Future<void> startAdvertising(String deviceID) async {
+  Future<void> startAdvertising(String deviceID,BuildContext ctx) async {
     try {
       await Nearby().startAdvertising(
         deviceID,
         strategy,
-        onConnectionInitiated: (name, info) async {
-          print('Connection initiated: $name');
-
+        onConnectionInitiated: (endpointId, info) {
+          showDialog(
+            context: ctx,
+            builder: (context) => AlertDialog(
+              title: Text("Accept connection request?"),
+              actions: [
+                ElevatedButton(
+                  child: Text("Decline"),
+                  onPressed: () {
+                    Nearby().rejectConnection(endpointId);
+                    Navigator.pop(context);
+                  },
+                ),
+                ElevatedButton(
+                  child: Text("Accept"),
+                  onPressed: () {
+                    Nearby().acceptConnection(endpointId,
+                        onPayLoadRecieved:(String id, Payload payload) {
+                          PayloadReceived(id,payload,ctx);
+                        } );
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          );
         },
         onConnectionResult: (id, status) {
           print('Connection result: $id, $status');
+          final providerData = Provider.of<MainProvider>(ctx, listen: false);
+          providerData.addconnectedDevices(id);
+          providerData.notifyListeners();
         },
-        onDisconnected: (name) {
-          print('Disconnected: $name');
-
+        onDisconnected: (id) {
+          print('Disconnected: $id');
+          final providerData = Provider.of<MainProvider>(ctx, listen: false);
+          providerData.connectedDevices.remove(id);
+          providerData.notifyListeners();
         },
         serviceId: "com.hg.bluechat.bluechat",
       );
@@ -119,7 +152,107 @@ class Funcs {
   }
 
 
+  Future<void> sendConnectionRequest(String endpointId,String deviceId,BuildContext ctx) async {
+    try {
+      await Nearby().requestConnection(
+        deviceId,
+        endpointId,
+        //Payload.fromBytes(utf8.encode("request")),
+        onConnectionInitiated: (endpointId, info) {
+          // called when connection is initiated
+          showDialog(
+            context: ctx,
+            builder: (context) => AlertDialog(
+              title: Text("Accept connection request?"),
+              actions: [
+                ElevatedButton(
+                  child: Text("Decline"),
+                  onPressed: () {
+                    Nearby().rejectConnection(endpointId);
+                    Navigator.pop(context);
+                  },
+                ),
+                ElevatedButton(
+                  child: Text("Accept"),
+                  onPressed: () {
+                    Nearby().acceptConnection(endpointId,
+                        onPayLoadRecieved:(String id, Payload payload) {
+                          PayloadReceived(id,payload,ctx);
+                        });
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+        onConnectionResult: (endpointId, status) {
+          print('Connection result: $endpointId, $status');
+
+          final providerData = Provider.of<MainProvider>(ctx, listen: false);
+          providerData.addconnectedDevices(endpointId);
+          providerData.notifyListeners();
+        },
+        onDisconnected: (endpointId) {
+          print('Disconnected: $endpointId');
+          final providerData = Provider.of<MainProvider>(ctx, listen: false);
+          providerData.connectedDevices.remove(endpointId);
+          providerData.notifyListeners();
+        },
+      );
+    } catch (e) {
+      print("Error sending connection request: $e");
+    }
+  }
+
+
+  Future<void> acceptConnectionRequest(String endpointId) async {
+    try {
+      await Nearby().acceptConnection(
+        endpointId,
+          onPayLoadRecieved: (endpointId, payload) {
+            if (payload.type == PayloadType.BYTES) {
+              String message = String.fromCharCodes(payload.bytes?.toList() ?? []);
+              print('Received message: $message');
+            }
+          }
+      );
+    } catch (e) {
+      print("Error accepting connection request: $e");
+    }
+  }
+
+
+  void PayloadReceived(String endpointId, Payload payload, BuildContext ctx) async {
+    final providerData = Provider.of<MainProvider>(ctx, listen: false);
+
+    if (payload.type == PayloadType.BYTES) {
+      String message = String.fromCharCodes(payload.bytes?.toList() ?? []);
+      final now = DateTime.now();
+      final formattedTime = DateFormat('hh:mm a').format(now);
+
+      final Messages msgdata = Messages(sender: endpointId,receiver: providerData.username,message: message,timestamp: formattedTime.toString());
+
+      await providerData.addMessage(msgdata).then((value) {
+                providerData.notifyListeners();
+      });
+
+      //providerData.addNewMessages(message);
+      //providerData.notifyListeners();
+    }
+  }
 
 
 
-}
+
+  void showSnackbar(dynamic a,BuildContext ctx) {
+    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+      content: Text(a.toString()),
+    ));
+  }
+
+
+
+
+  }
+

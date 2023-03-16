@@ -1,4 +1,5 @@
 import 'package:bluechat/models/userModel.dart';
+import 'package:bluechat/models/messagesModel.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -38,19 +39,23 @@ class BluDatabase {
           )
               '''
     );
+
+    await db.execute(
+        '''
+      CREATE TABLE messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender TEXT,
+        receiver TEXT,
+        message TEXT,
+        timestamp TEXT
+      )
+    ''');
+
+
   }
 
   static Future<User> createUser(User user) async {
     final db = await instance.database;
-
-    // final json = note.toJson();
-    // final columns =
-    //     '${NoteFields.title}, ${NoteFields.description}, ${NoteFields.time}';
-    // final values =
-    //     '${json[NoteFields.title]}, ${json[NoteFields.description]}, ${json[NoteFields.time]}';
-    // final id = await db
-    //     .rawInsert('INSERT INTO table_name ($columns) VALUES ($values)');
-
     final id = await db.insert(userTable, user.toJson());
     return user.copy(id: id);
   }
@@ -100,6 +105,51 @@ class BluDatabase {
       whereArgs: [id],
     );
   }
+
+  //messages
+
+  Future<Messages> insertMessage(Messages message) async {
+    final db = await instance.database;
+    final id = await db.insert('messages', message.toMap());
+    return message.copy(id: id);
+  }
+
+  Future<List<Messages>> getMessages(String sender, String receiver) async {
+    final db = await instance.database;
+    final messages = await db.query('messages',
+        where: '(sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)',
+        whereArgs: [sender, receiver, receiver, sender],
+        orderBy: 'timestamp ASC');
+    return messages.map((m) => Messages.fromMap(m)).toList();
+  }
+
+  Stream<List<Messages>> messagesStream(String sender, String receiver) async* {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query('messages', orderBy: 'timestamp ASC',
+        where: '(sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)', whereArgs: [sender, receiver, receiver, sender]);
+    yield List.generate(maps.length, (i) {
+      return Messages(
+        id: maps[i]['id'],
+        sender: maps[i]['sender'],
+        receiver: maps[i]['receiver'],
+        message: maps[i]['message'],
+        timestamp: maps[i]['timestamp'],
+      );
+    });
+  }
+
+
+  Future<int> updateMessage(Messages message) async {
+    final db = await instance.database;
+    return db.update('messages', message.toMap(),
+        where: 'id = ?', whereArgs: [message.id]);
+  }
+
+  Future<int> deleteMessage(int id) async {
+    final db = await instance.database;
+    return db.delete('messages', where: 'id = ?', whereArgs: [id]);
+  }
+
 
   Future close() async {
     final db = await instance.database;
