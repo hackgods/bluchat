@@ -51,6 +51,9 @@ dependencies:
   cryptography: ^2.5.0
   x25519: ^0.1.1
   intl: ^0.18.0
+  sqflite_sqlcipher: ^2.1.1+1
+  dummycastle: ^1.2.0
+  ffi: ^2.0.1
 
 
 

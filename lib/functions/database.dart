@@ -1,7 +1,13 @@
 import 'package:bluechat/models/userModel.dart';
 import 'package:bluechat/models/messagesModel.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+//import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
+
+import 'dart:ffi' as ffi; // For FFI
+import 'package:ffi/ffi.dart';
+typedef getpassNative = ffi.Pointer<Utf8> Function();
+typedef getpass = ffi.Pointer<Utf8> Function();
 
 class BluDatabase {
   static final BluDatabase instance = BluDatabase._init();
@@ -20,8 +26,15 @@ class BluDatabase {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
+    final dylib = ffi.DynamicLibrary.open('libencryptutils.so');
+    //print(dylib);
+    final gp = dylib.lookupFunction<getpassNative, getpass>('_Z11getpasswordv');
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+
+
+    final passwordutf8 = gp();
+    final password = passwordutf8.toDartString();
+    return await openDatabase(path, version: 1, onCreate: _createDB, password:password);
   }
 
   Future _createDB(Database db, int version) async {
