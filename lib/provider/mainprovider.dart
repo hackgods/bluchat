@@ -6,6 +6,8 @@ import 'package:bluechat/models/userModel.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 import 'package:bluechat/models/messagesModel.dart';
 
+import '../functions/EncryptUtil.dart';
+
 
 class MainProvider extends ChangeNotifier {
 
@@ -89,7 +91,7 @@ class MainProvider extends ChangeNotifier {
   }
 
 
-
+  EncryptUtil utils=EncryptUtil();
 
 
 }

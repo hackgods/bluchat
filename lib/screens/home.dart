@@ -50,9 +50,9 @@ class _HomeState extends State<Home> {
   }
 
   startScan(BuildContext ctx) async{
-    EncryptUtil utils=EncryptUtil();
-    await utils.gk();
-    final String publickey= await utils.pk();
+    final providerData = Provider.of<MainProvider>(context, listen: false);
+    await providerData.utils.gk();
+    String publickey=await providerData.utils.pk();
 
 
     final User uname = (await BluDatabase.readUser(1));
@@ -178,7 +178,9 @@ class _HomeState extends State<Home> {
                         //print(providerData.getMessages("hackgod", "FRUG"));
 
                            */
-
+                        //await providerData.utils.gk();
+                        print(await providerData.utils.pk());
+                        //Nearby().stopAllEndpoints();
 
                       },
                     child: Text("Reset Databases"),

@@ -47,12 +47,12 @@ class EncryptUtil {
 
   //pack public key into json string
   pk() async{
-    return jsonEncode((await aliceKeyPair.extractPublicKey()).bytes);
+    return base64Encode((await aliceKeyPair.extractPublicKey()).bytes);
   }
 
   //parse public key from json string
   ppk(String pkstr) async{
-    List pkl=jsonDecode(pkstr);
+    List pkl=base64Decode(pkstr);
     return SimplePublicKey(pkl.cast<int>(), type: KeyPairType.x25519);
   }
 

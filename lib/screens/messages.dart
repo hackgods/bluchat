@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 import 'package:bluechat/provider/mainprovider.dart';
@@ -8,13 +10,16 @@ import 'package:bluechat/models/messagesModel.dart';
 import 'package:bluechat/functions/database.dart';
 import 'package:intl/intl.dart';
 
+import '../functions/EncryptUtil.dart';
+
 
 class ChatScreen extends StatefulWidget {
   final String userName;
   final int photoID;
   final String endpointId;
+  final String publicKey;
 
-  ChatScreen({required this.userName,required this.photoID,required this.endpointId});
+  ChatScreen({required this.userName,required this.photoID,required this.endpointId,required this.publicKey});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -26,20 +31,28 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage(BuildContext ctx) async {
     final providerData = Provider.of<MainProvider>(ctx, listen: false);
+    log("peer pk: ${widget.publicKey}");
+    await providerData.utils.ss(await providerData.utils.ppk(widget.publicKey));
+
+    //String test='some plain text message';
     String message = _messageController.text;
+    String packed=SecretBag.Pack(await providerData.utils.enc(message));
+
+    print('packed message ${packed}');
+
     final now = DateTime.now();
     final formattedTime = DateFormat('hh:mm a').format(now);
 
     if (message.isNotEmpty) {
       // Encode the message as bytes and send it as a payload
-      Uint8List payload = Uint8List.fromList(utf8.encode(message));
+      Uint8List payload = Uint8List.fromList(utf8.encode(packed));
 
       //providerData.addNewMessages(message);
       final Messages msgdata = Messages(sender: providerData.username,receiver: widget.endpointId,message: message,timestamp: formattedTime.toString());
       await providerData.addMessage(msgdata).then((value) async{
         providerData.notifyListeners();
         await Nearby().sendBytesPayload(widget.endpointId, payload).then((value) {
-
+          log("encrypted ${payload}");
         });
       });
 
@@ -62,7 +75,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundImage: AssetImage('assets/avatars/${widget.photoID}.png'),
+              backgroundImage: AssetImage('assets/avatars/06.png'),
             ),
             SizedBox(width: 16),
             Text(
@@ -127,6 +140,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 IconButton(
                   icon: Icon(Icons.send),
                   onPressed: () => _sendMessage(context),
+                  color: Colors.blue,
+                ),
+
+                IconButton(
+                  icon: Icon(Icons.error),
+                  onPressed: () {
+                    print(widget.publicKey);
+                  },
                   color: Colors.blue,
                 ),
               ],
