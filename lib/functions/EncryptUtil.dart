@@ -2,6 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
+import 'package:dummycastle/pl/polinc/dummycastle/dummycastle.dart';
 
 
 @JsonSerializable()
@@ -39,19 +40,23 @@ class EncryptUtil {
   late SimpleKeyPair aliceKeyPair;
   late SecretKey sk;
 
+  //generate keypair
   gk() async {
     aliceKeyPair=await X25519().newKeyPair();
   }
 
-
+  //pack public key into json string
   pk() async{
     return jsonEncode((await aliceKeyPair.extractPublicKey()).bytes);
   }
+
+  //parse public key from json string
   ppk(String pkstr) async{
     List pkl=jsonDecode(pkstr);
     return SimplePublicKey(pkl.cast<int>(), type: KeyPairType.x25519);
   }
 
+  //derive secret key from peers public key
   ss(PublicKey bobPublicKey) async {
 
       sk = await X25519().sharedSecretKey(
@@ -60,7 +65,21 @@ class EncryptUtil {
     );
   }
 
+  //derive new secret key from old key, set a interval call, whoever initiated the session tell the peer to generate new key , sync sss call
+  sss() async {
+    final algorithm = Hkdf(
+      hmac: Hmac.sha256(),
+      outputLength: 32,
+    );
+    final nonce = [4,5,6];
+    final output = await algorithm.deriveKey(
+      secretKey: sk,
+      nonce: nonce,
+    );
+    sk=SecretKey(output.bytes);
+  }
 
+  //aes ctr 256 bits encryption
   Future<SecretBox> enc(String message) async {
 
     AesCtr algorithm = AesCtr.with256bits(
@@ -84,7 +103,7 @@ class EncryptUtil {
     return secretBox;
   }
 
-
+  //aes ctr 256 bits decryption
   Future<String> dec(SecretBox encrypted) async {
     AesCtr algorithm = AesCtr.with256bits(
       macAlgorithm: Hmac.sha256(),

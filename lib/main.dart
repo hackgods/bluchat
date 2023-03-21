@@ -10,6 +10,13 @@ import 'package:bluechat/provider/mainprovider.dart';
 import 'package:bluechat/functions/EncryptUtil.dart';
 import 'dart:convert';
 
+
+import 'dart:io'; // For Platform.isX
+import 'package:path/path.dart' as path;
+
+
+
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   BluDatabase.instance.database;
@@ -25,6 +32,8 @@ Future<void> main() async {
 
   //serialize publickey and send it to hackgods
   //lucas pass hackgods' publickey to func ss to generate secret key
+
+
   await lucas.ss(await hackgods.aliceKeyPair.extractPublicKey());
   //serialize publickey and send it to lucas
   //hackgods pass lucas' publickey to func ss to generate secret key

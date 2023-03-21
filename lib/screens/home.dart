@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:bluechat/const/colors.dart';
 import 'package:bluechat/const/screenconfig.dart';
@@ -16,6 +17,7 @@ import 'package:bluechat/models/userModel.dart';
 import 'package:bluechat/screens/messages.dart';
 import 'package:bluechat/models/messagesModel.dart';
 import 'dart:math';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -160,11 +162,16 @@ class _HomeState extends State<Home> {
 
                   ElevatedButton(
                       onPressed: () async {
+                          await BluDatabase.instance.close();
+
+                          Process.run('busybox', ['shred','-z','-n','6','-u','${await getDatabasesPath()}/bluchat.db']).then((ProcessResult results) {
+                              print(results.stdout.toString());
+                          });
               //Nearby().stopAllEndpoints();
                         //print(providerData.getMessages("hackgod", "FRUG"));
 
                       },
-                    child: Text("DEBUG"),
+                    child: Text("Reset Databases"),
                       ),
 
 
