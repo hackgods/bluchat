@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:bluechat/const/colors.dart';
 import 'package:bluechat/const/screenconfig.dart';
+import 'package:bluechat/functions/EncryptUtil.dart';
 import 'package:bluechat/screens/signup.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -49,8 +50,13 @@ class _HomeState extends State<Home> {
   }
 
   startScan(BuildContext ctx) async{
-      final User uname = (await BluDatabase.readUser(1));
-      final userstringid = uname.username+"."+uname.deviceID+"."+uname.profilePhoto.toString();
+    EncryptUtil utils=EncryptUtil();
+    await utils.gk();
+    final String publickey= await utils.pk();
+
+
+    final User uname = (await BluDatabase.readUser(1));
+      final userstringid = uname.username+"."+uname.deviceID+"."+uname.profilePhoto.toString()+"."+publickey;
 
       Funcs().startAdvertising(userstringid,ctx);
       await Future.delayed(Duration(seconds: 10));
@@ -138,7 +144,7 @@ class _HomeState extends State<Home> {
                                 backgroundColor: Colors.transparent,
                                 isScrollControlled: false,
                                 context: context,
-                                builder: (context) => drawer(parts[0],parts[1],int.parse(parts[2]),parts[3])
+                                builder: (context) => drawer(parts[0],parts[1],int.parse(parts[2]),parts[3],parts[4])
                             );
                           },
                           child: Container(
@@ -162,6 +168,7 @@ class _HomeState extends State<Home> {
 
                   ElevatedButton(
                       onPressed: () async {
+                          /*
                           await BluDatabase.instance.close();
 
                           Process.run('busybox', ['shred','-z','-n','6','-u','${await getDatabasesPath()}/bluchat.db']).then((ProcessResult results) {
@@ -169,6 +176,9 @@ class _HomeState extends State<Home> {
                           });
               //Nearby().stopAllEndpoints();
                         //print(providerData.getMessages("hackgod", "FRUG"));
+
+                           */
+
 
                       },
                     child: Text("Reset Databases"),
@@ -195,7 +205,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget drawer(String name, String deviceID, int photoID,endpointID) {
+  Widget drawer(String name, String deviceID, int photoID,String publicKey, endpointID) {
     final userstringid = name+"."+deviceID+"."+photoID.toString();
 
     final providerData = Provider.of<MainProvider>(context, listen: false);
@@ -226,7 +236,7 @@ class _HomeState extends State<Home> {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => ChatScreen(userName: name,photoID: photoID,endpointId: endpointID,)));
+                            builder: (context) => ChatScreen(userName: name,photoID: photoID,endpointId: endpointID,publicKey: publicKey)));
                       },
                       child: Text("Message"),
                       )
