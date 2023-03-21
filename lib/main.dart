@@ -23,32 +23,44 @@ Future<void> main() async {
   print("checking user presence");
   User? uname;
 
-  //on each side, have one encrypt utils
+
+
+//on each side, have one encrypt utils
   EncryptUtil lucas=EncryptUtil();
   EncryptUtil hackgods=EncryptUtil();
-  //call gk to generate keypair, if old keys cannot be trusted, call this again and generate new secret key
+//call gk to generate keypair, if old keys cannot be trusted, call this again and generate new secret key
   await lucas.gk();
   await hackgods.gk();
 
-  //serialize publickey and send it to hackgods
-  //lucas pass hackgods' publickey to func ss to generate secret key
 
 
+  print("Alice Public Key: ${base64Encode((await lucas.aliceKeyPair.extractPublicKey()).bytes)}");
+  print("Alice Private Key: ${base64Encode(await lucas.aliceKeyPair.extractPrivateKeyBytes())}");
+
+  print("Bob Public Key: ${base64Encode((await hackgods.aliceKeyPair.extractPublicKey()).bytes)}");
+  print("Bob Private Key: ${base64Encode(await hackgods.aliceKeyPair.extractPrivateKeyBytes())}");
+
+//serialize publickey and send it to hackgods
+//lucas pass hackgods' publickey to func ss to generate secret key
   await lucas.ss(await hackgods.aliceKeyPair.extractPublicKey());
-  //serialize publickey and send it to lucas
-  //hackgods pass lucas' publickey to func ss to generate secret key
+//serialize publickey and send it to lucas
+//hackgods pass lucas' publickey to func ss to generate secret key
   await hackgods.ss(await lucas.aliceKeyPair.extractPublicKey());
-  //up to this point, lucas and hackgods have the same secret key
+//up to this point, lucas and hackgods have the same secret key
+
+  print("Alice Shared Secret: ${base64Encode(await lucas.sk.extractBytes())}");
+  print("Bob Shared Secret: ${base64Encode(await hackgods.sk.extractBytes())}");
 
   String test='some plain text message';
 
-  //lucas encrypt test message //lucas serialize SecretBox and send it to hackgods
+//lucas encrypt test message //lucas serialize SecretBox and send it to hackgods
   SecretBox box1=await lucas.enc(test);
-  print("encrypt test: ${box1.cipherText}");
+  print("Encrypt Test Alice: ${base64Encode(box1.cipherText)}");
 
-  //hackgods recieve the Secretbox and unserialize it then decrypt the message
+//hackgods recieve the Secretbox and unserialize it then decrypt the message
   String Plaintext=await hackgods.dec(box1);
-  print("decrypt test: $Plaintext");
+  print("Decrypt Test Bob: $Plaintext");
+
 
 
 

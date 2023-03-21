@@ -1,3 +1,6 @@
+import 'dart:developer';
+
+import 'package:bluechat/functions/EncryptUtil.dart';
 import 'package:device_info/device_info.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:bluechat/models/messagesModel.dart';
 import 'package:bluechat/functions/database.dart';
 import 'package:intl/intl.dart';
+
+String filterInput(String s){
+  return '';
+}
 
 class Funcs {
 
@@ -227,11 +234,16 @@ class Funcs {
     final providerData = Provider.of<MainProvider>(ctx, listen: false);
 
     if (payload.type == PayloadType.BYTES) {
+
       String message = String.fromCharCodes(payload.bytes?.toList() ?? []);
+      log('message ${message}');
+      String decryptedmsf=await providerData.utils.dec(SecretBag.unPack(message));
+
+      log('decryt: ${decryptedmsf}');
       final now = DateTime.now();
       final formattedTime = DateFormat('hh:mm a').format(now);
 
-      final Messages msgdata = Messages(sender: endpointId,receiver: providerData.username,message: message,timestamp: formattedTime.toString());
+      final Messages msgdata = Messages(sender: endpointId,receiver: providerData.username,message: decryptedmsf,timestamp: formattedTime.toString());
 
       await providerData.addMessage(msgdata).then((value) {
                 providerData.notifyListeners();
@@ -250,9 +262,6 @@ class Funcs {
       content: Text(a.toString()),
     ));
   }
-
-
-
 
   }
 
